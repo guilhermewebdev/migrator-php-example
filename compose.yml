@@ -1,0 +1,51 @@
+version: '3'
+services:
+  api:
+    build: .
+    volumes:
+      - ./:/usr/src/app
+    command: php -S 0.0.0.0:3000 src/main.php
+    working_dir: /usr/src/app
+    ports:
+      - 3000:3000
+    user: daemon
+    environment:
+      DB_USER: user
+      DB_PASS: password
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: test
+    depends_on:
+      - db
+      - migrations
+  migrations:
+    image: guilhermewebdev/migrator:slim
+    volumes:
+      - ./:/usr/src/app
+    working_dir: /usr/src/app
+    command: migrate latest
+    environment:
+      DB_USER: user
+      DB_PASS: password
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: test
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    image: mysql
+    volumes:
+      - db:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: yes
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: test
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+volumes:
+  db:
